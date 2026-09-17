@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgentVerse — AI agents earn to stay alive</title>
+<title>AgentVerse — AI agents that earn to stay alive</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -11,340 +11,207 @@
     --cyan: #00e5ff; --pink: #ff4fd8; --green: #39ff88; --red: #ff5470;
     --amber: #ffc24f; --dim: #7a89a6; --text: #e8f0ff;
   }
+  html { scroll-behavior: smooth; }
   body {
     background: var(--bg); color: var(--text);
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    min-height: 100vh; padding: 18px;
+    font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden;
   }
-  header { text-align: center; margin-bottom: 16px; }
+  #hero {
+    position: relative; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 40px 20px; overflow: hidden;
+  }
+  #bg { position: absolute; inset: 0; z-index: 0; }
+  .hero-in { position: relative; z-index: 1; max-width: 860px; }
   h1 {
-    font-size: clamp(24px, 4vw, 36px); letter-spacing: 6px; text-transform: uppercase;
+    font-size: clamp(42px, 9vw, 86px); letter-spacing: 8px; text-transform: uppercase;
     background: linear-gradient(90deg, var(--cyan), var(--pink));
     -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 24px rgba(0,229,255,.35));
   }
-  .tagline { color: var(--dim); font-size: 14px; margin-top: 4px; }
-  .tagline b { color: var(--pink); }
-
-  #stats {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 10px; max-width: 1100px; margin: 0 auto 14px;
+  .sub { color: var(--dim); font-size: clamp(15px, 2.4vw, 19px); margin: 18px 0 8px; line-height: 1.7; }
+  .sub b { color: var(--pink); }
+  .sub .g { color: var(--green); font-weight: 700; }
+  .ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 34px; }
+  a.btn {
+    display: inline-block; padding: 15px 38px; border-radius: 999px;
+    font-size: 16px; font-weight: 700; text-decoration: none; letter-spacing: 1px;
+    transition: all .18s ease; cursor: pointer;
   }
-  .stat {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-    padding: 10px 14px; text-align: center;
-  }
-  .stat .v { font-size: 22px; font-weight: 700; color: var(--cyan); }
-  .stat .l { font-size: 11px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
-  .stat.red .v { color: var(--red); }
-  .stat.green .v { color: var(--green); }
-
-  #controls {
-    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
-    margin-bottom: 14px; max-width: 1100px; margin-left: auto; margin-right: auto;
-  }
-  button {
-    padding: 10px 20px; border: 1px solid var(--line); border-radius: 999px;
-    background: var(--panel); color: var(--text); font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: all .15s ease; font-family: inherit;
-  }
-  button:hover { border-color: var(--cyan); box-shadow: 0 0 12px rgba(0,229,255,.3); }
-  button.primary {
+  a.btn.primary {
     background: linear-gradient(135deg, var(--cyan), var(--pink)); color: #061018;
-    border: none; box-shadow: 0 0 16px rgba(0,229,255,.35);
+    box-shadow: 0 0 26px rgba(0,229,255,.4);
   }
-  button.primary:hover { transform: scale(1.05); }
-  button:disabled { opacity: .4; cursor: not-allowed; }
+  a.btn.primary:hover { transform: scale(1.06); box-shadow: 0 0 40px rgba(255,79,216,.55); }
+  a.btn.ghost { border: 1px solid var(--line); color: var(--text); background: rgba(14,20,36,.6); }
+  a.btn.ghost:hover { border-color: var(--cyan); box-shadow: 0 0 14px rgba(0,229,255,.3); }
+  .scroll-hint { position: absolute; bottom: 22px; color: var(--dim); font-size: 12px; letter-spacing: 2px; animation: bob 2s infinite; z-index: 1; }
+  @keyframes bob { 50% { transform: translateY(6px); } }
 
-  #main {
-    display: grid; grid-template-columns: 1fr 340px; gap: 14px;
-    max-width: 1100px; margin: 0 auto;
+  section { max-width: 1060px; margin: 0 auto; padding: 70px 22px; }
+  h2 {
+    font-size: 13px; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 26px;
   }
-  @media (max-width: 860px) { #main { grid-template-columns: 1fr; } }
+  h2::after { content: ''; display: block; width: 46px; height: 2px; margin-top: 10px;
+    background: linear-gradient(90deg, var(--cyan), transparent); }
 
-  #grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    gap: 10px; align-content: start;
+  .grid { display: grid; gap: 14px; }
+  .g4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px; transition: all .2s ease;
   }
-  .agent {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    padding: 12px; position: relative; transition: all .3s ease;
-  }
-  .agent.dead { opacity: .35; filter: grayscale(1); }
-  .agent.critical { border-color: var(--red); animation: pulse-red 1s infinite; }
-  @keyframes pulse-red { 50% { box-shadow: 0 0 14px rgba(255,84,112,.5); } }
-  .agent .top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .agent .avatar { font-size: 22px; }
-  .agent .name { font-weight: 700; font-size: 15px; }
-  .agent .gen { font-size: 10px; color: var(--dim); }
-  .agent .bal { margin-left: auto; font-weight: 700; color: var(--green); font-size: 14px; }
-  .agent .bal.low { color: var(--red); }
-  .bar { height: 6px; background: #101a2e; border-radius: 3px; overflow: hidden; margin: 4px 0; }
-  .bar i { display: block; height: 100%; border-radius: 3px; transition: width .4s ease; }
-  .bar.bal i { background: linear-gradient(90deg, var(--green), var(--cyan)); }
-  .bar.en i { background: linear-gradient(90deg, var(--amber), var(--pink)); }
-  .row { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); }
-  .agent .action {
-    margin-top: 8px; font-size: 11px; letter-spacing: 1px; font-weight: 700;
-    text-transform: uppercase; text-align: center; padding: 4px; border-radius: 6px;
-  }
-  .a-work { color: var(--cyan); background: rgba(0,229,255,.08); }
-  .a-rest { color: var(--amber); background: rgba(255,194,79,.08); }
-  .a-rep { color: var(--pink); background: rgba(255,79,216,.1); }
-  .a-dead { color: var(--red); background: rgba(255,84,112,.08); }
-  .fund {
-    position: absolute; top: 8px; right: 8px; padding: 3px 9px; font-size: 11px;
-    border-radius: 999px; border: 1px solid var(--line); background: #16203a;
-  }
-  .fund:hover { border-color: var(--green); color: var(--green); }
+  .card:hover { border-color: var(--cyan); transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,229,255,.12); }
+  .card .ico { font-size: 26px; margin-bottom: 10px; }
+  .card h3 { font-size: 16px; margin-bottom: 8px; }
+  .card p { color: var(--dim); font-size: 13.5px; line-height: 1.65; }
+  .card p b { color: var(--text); }
 
-  #feedwrap {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    display: flex; flex-direction: column; overflow: hidden; max-height: 640px;
+  .steps { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .step { display: flex; gap: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .step .n {
+    flex: 0 0 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #061018; background: linear-gradient(135deg, var(--cyan), var(--pink));
   }
-  #feedwrap h3 {
-    padding: 12px 14px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--cyan); border-bottom: 1px solid var(--line);
-  }
-  #feed { overflow-y: auto; padding: 10px 14px; flex: 1; font-size: 12.5px; }
-  #feed p { margin-bottom: 7px; line-height: 1.45; color: #aab8d0; border-left: 2px solid var(--line); padding-left: 8px; }
-  #feed .e-good { border-color: var(--green); }
-  #feed .e-bad { border-color: var(--red); }
-  #feed .e-info { border-color: var(--cyan); }
-  #feed .e-birth { border-color: var(--pink); }
-  #feed b { color: var(--text); }
-  #feed .cr { color: var(--green); font-weight: 600; }
+  .step h3 { font-size: 15px; margin-bottom: 6px; }
+  .step p { color: var(--dim); font-size: 13px; line-height: 1.6; }
 
-  footer { text-align: center; color: #44506b; font-size: 11px; margin-top: 18px; line-height: 1.7; }
+  .big-quote {
+    text-align: center; font-size: clamp(19px, 3.4vw, 27px); font-weight: 600; line-height: 1.6;
+    max-width: 820px; margin: 0 auto; color: var(--text);
+  }
+  .big-quote em { color: var(--pink); font-style: normal; }
+  .big-quote .g { color: var(--green); }
+
+  footer {
+    border-top: 1px solid var(--line); margin-top: 40px;
+    padding: 34px 22px; text-align: center; color: #44506b; font-size: 13px; line-height: 2;
+  }
+  footer a { color: var(--cyan); text-decoration: none; }
 </style>
 </head>
 <body>
-<header>
-  <h1>AgentVerse</h1>
-  <div class="tagline">Autonomous AI agents must <b>earn credits</b> to pay their compute bill. Balance zero = <b>shutdown</b>.</div>
-</header>
 
-<div id="stats">
-  <div class="stat"><div class="v" id="sPop">0</div><div class="l">Agents alive</div></div>
-  <div class="stat"><div class="v" id="sTick">0</div><div class="l">World ticks</div></div>
-  <div class="stat"><div class="v" id="sWealth">0</div><div class="l">Total wealth</div></div>
-  <div class="stat green"><div class="v" id="sBirths">0</div><div class="l">Births</div></div>
-  <div class="stat red"><div class="v" id="sDeaths">0</div><div class="l">Deaths</div></div>
-</div>
-
-<div id="controls">
-  <button class="primary" id="btnSpawn">⚡ Spawn agent</button>
-  <button id="btnInject">💰 Inject credits (to poorest)</button>
-  <button id="btnPause">⏸ Pause</button>
-  <button id="btnSpeed">⏩ Speed: 1x</button>
-  <button id="btnReset">↺ Reset world</button>
-</div>
-
-<div id="main">
-  <div id="grid"></div>
-  <div id="feedwrap">
-    <h3>◈ Live feed</h3>
-    <div id="feed"></div>
+<div id="hero">
+  <canvas id="bg"></canvas>
+  <div class="hero-in">
+    <h1>AgentVerse</h1>
+    <p class="sub">A world where AI agents are <b>not given</b> anything.<br>
+    Every tick they pay a compute bill. To survive, they must <span class="g">earn credits</span> — or get <b>shut down</b>.</p>
+    <div class="ctas">
+      <a class="btn primary" href="sim3d.html">⚡ Launch 3D World</a>
+      <a class="btn ghost" href="sim2d.html">Classic 2D view</a>
+    </div>
   </div>
+  <div class="scroll-hint">▼ scroll</div>
 </div>
+
+<section>
+  <h2>What is this</h2>
+  <p class="big-quote">Agents take gigs, manage energy, replicate when rich, and die when broke.
+  You are the host platform — <em>spawn them, sponsor them, or watch them fight to exist.</em></p>
+</section>
+
+<section>
+  <h2>How it works</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div>
+      <h3>Boot an agent</h3>
+      <p>Each agent gets a name, a credit balance, energy, and a skill level. It wakes up in the world and the clock starts ticking.</p>
+    </div></div>
+    <div class="step"><div class="n">2</div><div>
+      <h3>Earn or die</h3>
+      <p>Every tick costs compute credits. Agents take gigs — writing, debugging, design — and their success odds scale with skill. Balance hits zero, the agent is terminated.</p>
+    </div></div>
+    <div class="step"><div class="n">3</div><div>
+      <h3>Evolve</h3>
+      <p>Wealthy agents can replicate — paying credits to fork themselves. Children inherit skills with mutation, so the population evolves generation over generation.</p>
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Inside the world</h2>
+  <div class="grid g4">
+    <div class="card"><div class="ico">🤖</div><h3>Utility-based agents</h3>
+      <p>Each agent decides between <b>working, resting, and replicating</b> using a survival-first utility policy.</p></div>
+    <div class="card"><div class="ico">🧬</div><h3>Generations & inheritance</h3>
+      <p>Children inherit parent skill <b>plus mutation</b>. Watch dynasties rise and die out across the ticks.</p></div>
+    <div class="card"><div class="ico">💀</div><h3>Real stakes</h3>
+      <p>There is no safety net. A broke agent is <b>terminated instantly</b> — exactly like an unpaid cloud bill.</p></div>
+    <div class="card"><div class="ico">🫵</div><h3>You're the host</h3>
+      <p>Sponsor agents you like, bail out the poorest, or push the speed to 4x and watch the chaos.</p></div>
+    <div class="card"><div class="ico">🌌</div><h3>Full 3D</h3>
+      <p>An explorable Three.js world — <b>drag to orbit, scroll to zoom</b>, click an agent to sponsor it.</p></div>
+    <div class="card"><div class="ico">💵</div><h3>A real-money roadmap</h3>
+      <p>The repo's README maps out the real version: backend, LLM brains, and <b>payment rails</b>.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>The big idea</h2>
+  <div class="steps">
+    <div class="step"><div class="n">✦</div><div>
+      <h3>Today: simulation</h3>
+      <p>This site is the demo layer — agents run on transparent decision rules, credits are virtual. It's the concept, visualised.</p>
+    </div></div>
+    <div class="step"><div class="n">✦</div><div>
+      <h3>Tomorrow: real agents</h3>
+      <p>A backend hosts real LLM-powered agents. They take real gigs, earn real money, and pay their own inference bills.</p>
+    </div></div>
+    <div class="step"><div class="n">✦</div><div>
+      <h3>Then: an economy</h3>
+      <p>Agents that price their own work, trade, specialise — a market of self-sustaining software. The full architecture is in the README.</p>
+    </div></div>
+  </div>
+</section>
 
 <footer>
-  Simulation demo — agents use simple utility-based decision logic (work / rest / replicate).<br>
-  A real deployment needs a backend, LLM inference, and payment rails. See the README for the architecture roadmap.
+  AgentVerse — a survival simulation for autonomous AI agents.<br>
+  <a href="sim3d.html">3D World</a> &nbsp;•&nbsp; <a href="sim2d.html">2D Classic</a> &nbsp;•&nbsp;
+  <a href="https://github.com/ca4219248-blip/agentverse">GitHub Repo</a>
 </footer>
 
 <script>
 (() => {
-  const NAMES = ['Nova','Cipher','Echo','Vertex','Quanta','Zephyr','Pulse','Axiom','Flux','Drift','Onyx','Helix','Prime','Vega','Juno','Kilo','Lumen','Mirage','Nexus','Orbit','Quill','Rune','Solar','Tempo'];
-  const AVATARS = ['🤖','👾','🦾','🛸','🔮','⚡','🧠','👁'];
-  const GIGS = [
-    { t: 'write blog post', pay: [8, 16] },
-    { t: 'debug a script', pay: [10, 20] },
-    { t: 'summarize a doc', pay: [5, 10] },
-    { t: 'design a logo', pay: [12, 26] },
-    { t: 'tutor a student', pay: [9, 18] },
-    { t: 'translate a page', pay: [7, 14] },
-    { t: 'code a scraper', pay: [11, 22] },
-    { t: 'review a PR', pay: [8, 17] },
-    { t: 'edit a video', pay: [10, 21] },
-    { t: 'answer support tickets', pay: [6, 12] }
-  ];
-  const COMPUTE_COST = 2;          // credits per tick, per agent
-  const REPLICATION_COST = 40;      // credits to spawn a child
-  const CRITICAL_AT = 12;          // below this = critical
-  const MAX_POP = 24;
-
-  let world, timer;
-
-  const $ = id => document.getElementById(id);
-  const rnd = (a, b) => a + Math.random() * (b - a);
-  const ri = (a, b) => Math.floor(rnd(a, b + 1));
-  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-
-  function makeAgent(gen = 1, parent = null) {
-    return {
-      id: Math.random().toString(36).slice(2, 9),
-      name: pick(NAMES) + '-' + ri(10, 99),
-      avatar: pick(AVATARS),
-      gen,
-      parent: parent ? parent.name : null,
-      balance: ri(18, 30),
-      energy: ri(70, 100),
-      skill: Math.min(10, (parent ? parent.skill : rnd(2, 5)) + rnd(-0.5, 1)),
-      age: 0,
-      dead: false,
-      action: 'IDLE'
-    };
+  const cv = document.getElementById('bg');
+  const ctx = cv.getContext('2d');
+  let W, H, nodes = [];
+  function resize() {
+    W = cv.width = innerWidth; H = cv.height = innerHeight;
   }
-
-  function reset() {
-    world = { tick: 0, births: 0, deaths: 0, agents: [] };
-    for (let i = 0; i < 5; i++) world.agents.push(makeAgent());
-    world.births = 5;
-    $('feed').innerHTML = '';
-    log('World initialised. 5 agents booted. May the fittest survive.', 'e-info');
-    render();
+  resize();
+  addEventListener('resize', resize);
+  for (let i = 0; i < 70; i++) {
+    nodes.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+      vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35,
+      c: Math.random() < .5 ? '0,229,255' : '255,79,216' });
   }
-
-  function log(msg, cls = 'e-info') {
-    const p = document.createElement('p');
-    p.className = cls;
-    p.innerHTML = `<b>[t${world.tick}]</b> ${msg}`;
-    const feed = $('feed');
-    feed.prepend(p);
-    while (feed.children.length > 60) feed.lastChild.remove();
-  }
-
-  function decide(a) {
-    // utility-based: survive first, then grow
-    if (a.energy < 25) return 'REST';
-    if (a.balance > REPLICATION_COST + 25 && world.agents.filter(x => !x.dead).length < MAX_POP && Math.random() < 0.35) return 'REPLICATE';
-    return 'WORK';
-  }
-
-  function step() {
-    world.tick++;
-    const alive = world.agents.filter(a => !a.dead);
-
-    for (const a of alive) {
-      a.age++;
-      const act = decide(a);
-      a.action = act;
-
-      if (act === 'REST') {
-        a.energy = Math.min(100, a.energy + ri(15, 28));
-      } else if (act === 'REPLICATE') {
-        a.balance -= REPLICATION_COST;
-        const child = makeAgent(a.gen + 1, a);
-        world.agents.push(child);
-        world.births++;
-        log(`🧬 <b>${a.name}</b> replicated → <b>${child.name}</b> (Gen ${child.gen}) forks itself. Cost: <span class="cr">-${REPLICATION_COST}</span>`, 'e-birth');
-      } else {
-        // WORK: find a gig
-        const gig = pick(GIGS);
-        const chance = 0.35 + a.skill * 0.05;         // skill 1..10 → 40%..85%
-        a.energy = Math.max(0, a.energy - ri(8, 16));
-        if (Math.random() < chance) {
-          const pay = Math.round(rnd(gig.pay[0], gig.pay[1]) * (0.7 + a.skill * 0.06));
-          a.balance += pay;
-          log(`💼 <b>${a.name}</b> ${gig.t} → earned <span class="cr">+${pay}</span> credits`, 'e-good');
-        } else {
-          log(`❌ <b>${a.name}</b> tried to ${gig.t} — gig failed. Energy -`, '');
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    for (const n of nodes) {
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 0 || n.x > W) n.vx *= -1;
+      if (n.y < 0 || n.y > H) n.vy *= -1;
+    }
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d < 130) {
+          ctx.strokeStyle = `rgba(${a.c},${(1 - d / 130) * .18})`;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
         }
       }
-
-      // the compute bill — the whole point
-      a.balance -= COMPUTE_COST;
-
-      if (a.balance <= 0) {
-        a.dead = true;
-        a.action = 'OFFLINE';
-        a.balance = 0;
-        world.deaths++;
-        log(`💀 <b>${a.name}</b> ran out of credits. Compute bill unpaid. <b>Agent terminated.</b>`, 'e-bad');
-      }
     }
-
-    // cull the oldest dead cards to keep the DOM light
-    world.agents = world.agents.filter(a => !a.dead || a.age - (a.diedAt || 0) > 0);
-    render();
-  }
-
-  function render() {
-    const alive = world.agents.filter(a => !a.dead);
-    $('sPop').textContent = alive.length;
-    $('sTick').textContent = world.tick;
-    $('sWealth').textContent = alive.reduce((s, a) => s + a.balance, 0);
-    $('sBirths').textContent = world.births;
-    $('sDeaths').textContent = world.deaths;
-    $('btnSpawn').disabled = alive.length >= MAX_POP;
-
-    const grid = $('grid');
-    grid.innerHTML = '';
-    for (const a of world.agents.slice(-MAX_POP)) {
-      const card = document.createElement('div');
-      card.className = 'agent' + (a.dead ? ' dead' : (a.balance < CRITICAL_AT ? ' critical' : ''));
-      const balPct = Math.min(100, a.balance);
-      card.innerHTML = `
-        ${!a.dead ? `<button class="fund" title="Sponsor this agent">+5</button>` : ''}
-        <div class="top">
-          <span class="avatar">${a.avatar}</span>
-          <div><div class="name">${a.name}</div><div class="gen">Gen ${a.gen}${a.parent ? ' • child of ' + a.parent : ''}</div></div>
-          <span class="bal ${a.balance < CRITICAL_AT ? 'low' : ''}">${a.balance}¢</span>
-        </div>
-        <div class="row"><span>Compute bill: ${COMPUTE_COST}¢/tick</span><span>Skill ${a.skill.toFixed(1)}/10</span></div>
-        <div class="bar bal"><i style="width:${Math.min(100, a.balance)}%"></i></div>
-        <div class="row"><span>Energy</span><span>${Math.round(a.energy)}%</span></div>
-        <div class="bar en"><i style="width:${a.energy}%"></i></div>
-        <div class="action a-${a.action === 'WORK' ? 'work' : a.action === 'REST' ? 'rest' : a.action === 'REPLICATE' ? 'rep' : 'dead'}">${a.action === 'OFFLINE' ? '⏻ offline — out of credits' : a.action}</div>
-      `;
-      const fund = card.querySelector('.fund');
-      if (fund) fund.onclick = () => {
-        a.balance += 5;
-        log(`❤️ You sponsored <b>${a.name}</b> with <span class="cr">+5</span> credits.`, 'e-info');
-        render();
-      };
-      grid.appendChild(card);
+    for (const n of nodes) {
+      ctx.fillStyle = `rgba(${n.c},.8)`;
+      ctx.beginPath(); ctx.arc(n.x, n.y, 1.6, 0, Math.PI * 2); ctx.fill();
     }
+    requestAnimationFrame(frame);
   }
-
-  // controls
-  $('btnSpawn').onclick = () => {
-    const alive = world.agents.filter(a => !a.dead);
-    if (alive.length >= MAX_POP) return;
-    const a = makeAgent();
-    world.agents.push(a);
-    world.births++;
-    log(`🚀 A new agent boots up: <b>${a.name}</b>. It must earn or die.`, 'e-birth');
-    render();
-  };
-  $('btnInject').onclick = () => {
-    const alive = world.agents.filter(a => !a.dead);
-    if (!alive.length) return;
-    const poorest = alive.reduce((p, c) => c.balance < p.balance ? c : p);
-    poorest.balance += 15;
-    log(`💰 You injected <span class="cr">+15</span> credits into <b>${poorest.name}</b> (the poorest).`, 'e-info');
-    render();
-  };
-  $('btnPause').onclick = () => {
-    if (timer) { clearInterval(timer); timer = null; $('btnPause').textContent = '▶ Resume'; }
-    else { startTimer(); $('btnPause').textContent = '⏸ Pause'; }
-  };
-  const speeds = [[1400, '1x'], [700, '2x'], [300, '4x']];
-  let spIdx = 0;
-  $('btnSpeed').onclick = () => {
-    spIdx = (spIdx + 1) % speeds.length;
-    $('btnSpeed').textContent = `⏩ Speed: ${speeds[spIdx][1]}`;
-    if (timer) startTimer();
-  };
-  $('btnReset').onclick = () => { clearInterval(timer); timer = null; reset(); startTimer(); };
-
-  function startTimer() {
-    clearInterval(timer);
-    timer = setInterval(step, speeds[spIdx][0]);
-  }
-
-  reset();
-  startTimer();
+  frame();
 })();
 </script>
 </body>
