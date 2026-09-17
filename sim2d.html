@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentVerse — AI agents earn to stay alive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #080b14; --panel: #0e1424; --line: #1c2942;
+    --cyan: #00e5ff; --pink: #ff4fd8; --green: #39ff88; --red: #ff5470;
+    --amber: #ffc24f; --dim: #7a89a6; --text: #e8f0ff;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh; padding: 18px;
+  }
+  header { text-align: center; margin-bottom: 16px; }
+  h1 {
+    font-size: clamp(24px, 4vw, 36px); letter-spacing: 6px; text-transform: uppercase;
+    background: linear-gradient(90deg, var(--cyan), var(--pink));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tagline { color: var(--dim); font-size: 14px; margin-top: 4px; }
+  .tagline b { color: var(--pink); }
+
+  #stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px; max-width: 1100px; margin: 0 auto 14px;
+  }
+  .stat {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 14px; text-align: center;
+  }
+  .stat .v { font-size: 22px; font-weight: 700; color: var(--cyan); }
+  .stat .l { font-size: 11px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+  .stat.red .v { color: var(--red); }
+  .stat.green .v { color: var(--green); }
+
+  #controls {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    margin-bottom: 14px; max-width: 1100px; margin-left: auto; margin-right: auto;
+  }
+  button {
+    padding: 10px 20px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--panel); color: var(--text); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all .15s ease; font-family: inherit;
+  }
+  button:hover { border-color: var(--cyan); box-shadow: 0 0 12px rgba(0,229,255,.3); }
+  button.primary {
+    background: linear-gradient(135deg, var(--cyan), var(--pink)); color: #061018;
+    border: none; box-shadow: 0 0 16px rgba(0,229,255,.35);
+  }
+  button.primary:hover { transform: scale(1.05); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+
+  #main {
+    display: grid; grid-template-columns: 1fr 340px; gap: 14px;
+    max-width: 1100px; margin: 0 auto;
+  }
+  @media (max-width: 860px) { #main { grid-template-columns: 1fr; } }
+
+  #grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 10px; align-content: start;
+  }
+  .agent {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px; position: relative; transition: all .3s ease;
+  }
+  .agent.dead { opacity: .35; filter: grayscale(1); }
+  .agent.critical { border-color: var(--red); animation: pulse-red 1s infinite; }
+  @keyframes pulse-red { 50% { box-shadow: 0 0 14px rgba(255,84,112,.5); } }
+  .agent .top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .agent .avatar { font-size: 22px; }
+  .agent .name { font-weight: 700; font-size: 15px; }
+  .agent .gen { font-size: 10px; color: var(--dim); }
+  .agent .bal { margin-left: auto; font-weight: 700; color: var(--green); font-size: 14px; }
+  .agent .bal.low { color: var(--red); }
+  .bar { height: 6px; background: #101a2e; border-radius: 3px; overflow: hidden; margin: 4px 0; }
+  .bar i { display: block; height: 100%; border-radius: 3px; transition: width .4s ease; }
+  .bar.bal i { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+  .bar.en i { background: linear-gradient(90deg, var(--amber), var(--pink)); }
+  .row { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); }
+  .agent .action {
+    margin-top: 8px; font-size: 11px; letter-spacing: 1px; font-weight: 700;
+    text-transform: uppercase; text-align: center; padding: 4px; border-radius: 6px;
+  }
+  .a-work { color: var(--cyan); background: rgba(0,229,255,.08); }
+  .a-rest { color: var(--amber); background: rgba(255,194,79,.08); }
+  .a-rep { color: var(--pink); background: rgba(255,79,216,.1); }
+  .a-dead { color: var(--red); background: rgba(255,84,112,.08); }
+  .fund {
+    position: absolute; top: 8px; right: 8px; padding: 3px 9px; font-size: 11px;
+    border-radius: 999px; border: 1px solid var(--line); background: #16203a;
+  }
+  .fund:hover { border-color: var(--green); color: var(--green); }
+
+  #feedwrap {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    display: flex; flex-direction: column; overflow: hidden; max-height: 640px;
+  }
+  #feedwrap h3 {
+    padding: 12px 14px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--cyan); border-bottom: 1px solid var(--line);
+  }
+  #feed { overflow-y: auto; padding: 10px 14px; flex: 1; font-size: 12.5px; }
+  #feed p { margin-bottom: 7px; line-height: 1.45; color: #aab8d0; border-left: 2px solid var(--line); padding-left: 8px; }
+  #feed .e-good { border-color: var(--green); }
+  #feed .e-bad { border-color: var(--red); }
+  #feed .e-info { border-color: var(--cyan); }
+  #feed .e-birth { border-color: var(--pink); }
+  #feed b { color: var(--text); }
+  #feed .cr { color: var(--green); font-weight: 600; }
+
+  footer { text-align: center; color: #44506b; font-size: 11px; margin-top: 18px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<header>
+  <h1>AgentVerse</h1>
+  <div class="tagline">Autonomous AI agents must <b>earn credits</b> to pay their compute bill. Balance zero = <b>shutdown</b>.</div>
+</header>
+
+<div id="stats">
+  <div class="stat"><div class="v" id="sPop">0</div><div class="l">Agents alive</div></div>
+  <div class="stat"><div class="v" id="sTick">0</div><div class="l">World ticks</div></div>
+  <div class="stat"><div class="v" id="sWealth">0</div><div class="l">Total wealth</div></div>
+  <div class="stat green"><div class="v" id="sBirths">0</div><div class="l">Births</div></div>
+  <div class="stat red"><div class="v" id="sDeaths">0</div><div class="l">Deaths</div></div>
+</div>
+
+<div id="controls">
+  <button class="primary" id="btnSpawn">⚡ Spawn agent</button>
+  <button id="btnInject">💰 Inject credits (to poorest)</button>
+  <button id="btnPause">⏸ Pause</button>
+  <button id="btnSpeed">⏩ Speed: 1x</button>
+  <button id="btnReset">↺ Reset world</button>
+</div>
+
+<div id="main">
+  <div id="grid"></div>
+  <div id="feedwrap">
+    <h3>◈ Live feed</h3>
+    <div id="feed"></div>
+  </div>
+</div>
+
+<footer>
+  Simulation demo — agents use simple utility-based decision logic (work / rest / replicate).<br>
+  A real deployment needs a backend, LLM inference, and payment rails. See the README for the architecture roadmap.
+</footer>
+
+<script>
+(() => {
+  const NAMES = ['Nova','Cipher','Echo','Vertex','Quanta','Zephyr','Pulse','Axiom','Flux','Drift','Onyx','Helix','Prime','Vega','Juno','Kilo','Lumen','Mirage','Nexus','Orbit','Quill','Rune','Solar','Tempo'];
+  const AVATARS = ['🤖','👾','🦾','🛸','🔮','⚡','🧠','👁'];
+  const GIGS = [
+    { t: 'write blog post', pay: [8, 16] },
+    { t: 'debug a script', pay: [10, 20] },
+    { t: 'summarize a doc', pay: [5, 10] },
+    { t: 'design a logo', pay: [12, 26] },
+    { t: 'tutor a student', pay: [9, 18] },
+    { t: 'translate a page', pay: [7, 14] },
+    { t: 'code a scraper', pay: [11, 22] },
+    { t: 'review a PR', pay: [8, 17] },
+    { t: 'edit a video', pay: [10, 21] },
+    { t: 'answer support tickets', pay: [6, 12] }
+  ];
+  const COMPUTE_COST = 2;          // credits per tick, per agent
+  const REPLICATION_COST = 40;      // credits to spawn a child
+  const CRITICAL_AT = 12;          // below this = critical
+  const MAX_POP = 24;
+
+  let world, timer;
+
+  const $ = id => document.getElementById(id);
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const ri = (a, b) => Math.floor(rnd(a, b + 1));
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  function makeAgent(gen = 1, parent = null) {
+    return {
+      id: Math.random().toString(36).slice(2, 9),
+      name: pick(NAMES) + '-' + ri(10, 99),
+      avatar: pick(AVATARS),
+      gen,
+      parent: parent ? parent.name : null,
+      balance: ri(18, 30),
+      energy: ri(70, 100),
+      skill: Math.min(10, (parent ? parent.skill : rnd(2, 5)) + rnd(-0.5, 1)),
+      age: 0,
+      dead: false,
+      action: 'IDLE'
+    };
+  }
+
+  function reset() {
+    world = { tick: 0, births: 0, deaths: 0, agents: [] };
+    for (let i = 0; i < 5; i++) world.agents.push(makeAgent());
+    world.births = 5;
+    $('feed').innerHTML = '';
+    log('World initialised. 5 agents booted. May the fittest survive.', 'e-info');
+    render();
+  }
+
+  function log(msg, cls = 'e-info') {
+    const p = document.createElement('p');
+    p.className = cls;
+    p.innerHTML = `<b>[t${world.tick}]</b> ${msg}`;
+    const feed = $('feed');
+    feed.prepend(p);
+    while (feed.children.length > 60) feed.lastChild.remove();
+  }
+
+  function decide(a) {
+    // utility-based: survive first, then grow
+    if (a.energy < 25) return 'REST';
+    if (a.balance > REPLICATION_COST + 25 && world.agents.filter(x => !x.dead).length < MAX_POP && Math.random() < 0.35) return 'REPLICATE';
+    return 'WORK';
+  }
+
+  function step() {
+    world.tick++;
+    const alive = world.agents.filter(a => !a.dead);
+
+    for (const a of alive) {
+      a.age++;
+      const act = decide(a);
+      a.action = act;
+
+      if (act === 'REST') {
+        a.energy = Math.min(100, a.energy + ri(15, 28));
+      } else if (act === 'REPLICATE') {
+        a.balance -= REPLICATION_COST;
+        const child = makeAgent(a.gen + 1, a);
+        world.agents.push(child);
+        world.births++;
+        log(`🧬 <b>${a.name}</b> replicated → <b>${child.name}</b> (Gen ${child.gen}) forks itself. Cost: <span class="cr">-${REPLICATION_COST}</span>`, 'e-birth');
+      } else {
+        // WORK: find a gig
+        const gig = pick(GIGS);
+        const chance = 0.35 + a.skill * 0.05;         // skill 1..10 → 40%..85%
+        a.energy = Math.max(0, a.energy - ri(8, 16));
+        if (Math.random() < chance) {
+          const pay = Math.round(rnd(gig.pay[0], gig.pay[1]) * (0.7 + a.skill * 0.06));
+          a.balance += pay;
+          log(`💼 <b>${a.name}</b> ${gig.t} → earned <span class="cr">+${pay}</span> credits`, 'e-good');
+        } else {
+          log(`❌ <b>${a.name}</b> tried to ${gig.t} — gig failed. Energy -`, '');
+        }
+      }
+
+      // the compute bill — the whole point
+      a.balance -= COMPUTE_COST;
+
+      if (a.balance <= 0) {
+        a.dead = true;
+        a.action = 'OFFLINE';
+        a.balance = 0;
+        world.deaths++;
+        log(`💀 <b>${a.name}</b> ran out of credits. Compute bill unpaid. <b>Agent terminated.</b>`, 'e-bad');
+      }
+    }
+
+    // cull the oldest dead cards to keep the DOM light
+    world.agents = world.agents.filter(a => !a.dead || a.age - (a.diedAt || 0) > 0);
+    render();
+  }
+
+  function render() {
+    const alive = world.agents.filter(a => !a.dead);
+    $('sPop').textContent = alive.length;
+    $('sTick').textContent = world.tick;
+    $('sWealth').textContent = alive.reduce((s, a) => s + a.balance, 0);
+    $('sBirths').textContent = world.births;
+    $('sDeaths').textContent = world.deaths;
+    $('btnSpawn').disabled = alive.length >= MAX_POP;
+
+    const grid = $('grid');
+    grid.innerHTML = '';
+    for (const a of world.agents.slice(-MAX_POP)) {
+      const card = document.createElement('div');
+      card.className = 'agent' + (a.dead ? ' dead' : (a.balance < CRITICAL_AT ? ' critical' : ''));
+      const balPct = Math.min(100, a.balance);
+      card.innerHTML = `
+        ${!a.dead ? `<button class="fund" title="Sponsor this agent">+5</button>` : ''}
+        <div class="top">
+          <span class="avatar">${a.avatar}</span>
+          <div><div class="name">${a.name}</div><div class="gen">Gen ${a.gen}${a.parent ? ' • child of ' + a.parent : ''}</div></div>
+          <span class="bal ${a.balance < CRITICAL_AT ? 'low' : ''}">${a.balance}¢</span>
+        </div>
+        <div class="row"><span>Compute bill: ${COMPUTE_COST}¢/tick</span><span>Skill ${a.skill.toFixed(1)}/10</span></div>
+        <div class="bar bal"><i style="width:${Math.min(100, a.balance)}%"></i></div>
+        <div class="row"><span>Energy</span><span>${Math.round(a.energy)}%</span></div>
+        <div class="bar en"><i style="width:${a.energy}%"></i></div>
+        <div class="action a-${a.action === 'WORK' ? 'work' : a.action === 'REST' ? 'rest' : a.action === 'REPLICATE' ? 'rep' : 'dead'}">${a.action === 'OFFLINE' ? '⏻ offline — out of credits' : a.action}</div>
+      `;
+      const fund = card.querySelector('.fund');
+      if (fund) fund.onclick = () => {
+        a.balance += 5;
+        log(`❤️ You sponsored <b>${a.name}</b> with <span class="cr">+5</span> credits.`, 'e-info');
+        render();
+      };
+      grid.appendChild(card);
+    }
+  }
+
+  // controls
+  $('btnSpawn').onclick = () => {
+    const alive = world.agents.filter(a => !a.dead);
+    if (alive.length >= MAX_POP) return;
+    const a = makeAgent();
+    world.agents.push(a);
+    world.births++;
+    log(`🚀 A new agent boots up: <b>${a.name}</b>. It must earn or die.`, 'e-birth');
+    render();
+  };
+  $('btnInject').onclick = () => {
+    const alive = world.agents.filter(a => !a.dead);
+    if (!alive.length) return;
+    const poorest = alive.reduce((p, c) => c.balance < p.balance ? c : p);
+    poorest.balance += 15;
+    log(`💰 You injected <span class="cr">+15</span> credits into <b>${poorest.name}</b> (the poorest).`, 'e-info');
+    render();
+  };
+  $('btnPause').onclick = () => {
+    if (timer) { clearInterval(timer); timer = null; $('btnPause').textContent = '▶ Resume'; }
+    else { startTimer(); $('btnPause').textContent = '⏸ Pause'; }
+  };
+  const speeds = [[1400, '1x'], [700, '2x'], [300, '4x']];
+  let spIdx = 0;
+  $('btnSpeed').onclick = () => {
+    spIdx = (spIdx + 1) % speeds.length;
+    $('btnSpeed').textContent = `⏩ Speed: ${speeds[spIdx][1]}`;
+    if (timer) startTimer();
+  };
+  $('btnReset').onclick = () => { clearInterval(timer); timer = null; reset(); startTimer(); };
+
+  function startTimer() {
+    clearInterval(timer);
+    timer = setInterval(step, speeds[spIdx][0]);
+  }
+
+  reset();
+  startTimer();
+})();
+</script>
+</body>
+</html>
